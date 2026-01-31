@@ -49,12 +49,30 @@ def load_docs():
 
 DOCS = load_docs()
 
-# Service registry - extracted from docs
-SERVICES = {
+# Service registry - use internal URLs when on Railway
+USE_INTERNAL = os.environ.get('USE_INTERNAL_NETWORK', 'false').lower() == 'true'
+
+# Internal Railway networking URLs (http, not https!)
+INTERNAL_SERVICES = {
+    "nmap": "http://nmap.railway.internal:8080",
+    "nuclei": "http://nuclei.railway.internal:8080",
+    "sqlmap": "http://sqlmap-api.railway.internal:8080",
+    "bhp": "http://bhp-api.railway.internal:8080",
+    "dns-tools": "http://dns-tools-api.railway.internal:8080",
+    "theharvester": "http://theHarvester.railway.internal:8080",
+    "argus-recon": "http://argus-recon.railway.internal:8080",
+    "shodan": "http://shodan_cvedb.railway.internal:8080",
+}
+
+# Public URLs (for docs display)
+PUBLIC_SERVICES = {
     doc['service']: doc['url']
     for doc in DOCS.values()
     if 'service' in doc and 'url' in doc
 }
+
+# Use internal when configured, otherwise public
+SERVICES = INTERNAL_SERVICES if USE_INTERNAL else PUBLIC_SERVICES
 
 # ==================== DOCUMENTATION ENDPOINTS ====================
 
