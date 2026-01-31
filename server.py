@@ -1,9 +1,34 @@
 from flask import Flask, jsonify, request
+from functools import wraps
 import requests
 import json
 import os
 
 app = Flask(__name__)
+
+# ==================== AUTH ====================
+# API key required for all endpoints except /health
+
+API_KEY = os.environ.get('D3BUGR_API_KEY', '')
+
+def require_api_key(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not API_KEY:
+            # No key configured = open (dev mode)
+            return f(*args, **kwargs)
+
+        # Check header or query param
+        provided_key = request.headers.get('X-API-Key') or request.args.get('api_key')
+
+        if not provided_key:
+            return jsonify({'error': 'API key required', 'header': 'X-API-Key'}), 401
+
+        if provided_key != API_KEY:
+            return jsonify({'error': 'Invalid API key'}), 403
+
+        return f(*args, **kwargs)
+    return decorated
 
 # ==================== LOAD EMBEDDED DOCS ====================
 # All docs loaded from JSON at startup - no external network calls
@@ -34,6 +59,7 @@ SERVICES = {
 # ==================== DOCUMENTATION ENDPOINTS ====================
 
 @app.route('/', methods=['GET'])
+@require_api_key
 def index():
     """Full documentation - all services, meta, and context"""
     return jsonify({
@@ -43,16 +69,19 @@ def index():
     })
 
 @app.route('/docs', methods=['GET'])
+@require_api_key
 def docs():
     """Alias for full docs"""
     return index()
 
 @app.route('/meta', methods=['GET'])
+@require_api_key
 def meta():
     """Meta information and LLM context"""
     return jsonify(DOCS.get('meta', {}))
 
 @app.route('/context', methods=['GET'])
+@require_api_key
 def context():
     """LLM context - what/why/when/workflow"""
     meta = DOCS.get('meta', {})
@@ -63,12 +92,14 @@ def context():
     })
 
 @app.route('/workflow', methods=['GET'])
+@require_api_key
 def workflow():
     """Hunting workflow phases"""
     meta = DOCS.get('meta', {})
     return jsonify(meta.get('workflow', {}))
 
 @app.route('/services', methods=['GET'])
+@require_api_key
 def list_services():
     """List all available services with URLs and descriptions"""
     services = {}
@@ -84,6 +115,7 @@ def list_services():
     return jsonify(services)
 
 @app.route('/services/<service>', methods=['GET'])
+@require_api_key
 def service_detail(service):
     """Get complete documentation for a specific service"""
     for key, doc in DOCS.items():
@@ -95,6 +127,7 @@ def service_detail(service):
     }), 404
 
 @app.route('/endpoints', methods=['GET'])
+@require_api_key
 def all_endpoints():
     """List all endpoints across all services"""
     endpoints = []
@@ -111,6 +144,7 @@ def all_endpoints():
     return jsonify(endpoints)
 
 @app.route('/mcp', methods=['GET'])
+@require_api_key
 def mcp():
     """MCP tool mappings for all services"""
     mcp_tools = {}
@@ -124,6 +158,7 @@ def mcp():
     })
 
 @app.route('/examples', methods=['GET'])
+@require_api_key
 def examples():
     """All usage examples across services"""
     all_examples = []
@@ -135,6 +170,7 @@ def examples():
     return jsonify(all_examples)
 
 @app.route('/categories', methods=['GET'])
+@require_api_key
 def categories():
     """Services grouped by category"""
     cats = {}
@@ -153,6 +189,7 @@ def categories():
 # ==================== GATEWAY ENDPOINTS ====================
 
 @app.route('/call/<service>/<path:endpoint>', methods=['GET', 'POST'])
+@require_api_key
 def call_service(service, endpoint):
     """
     Gateway to call any service endpoint
@@ -192,6 +229,7 @@ def call_service(service, endpoint):
         return jsonify({'error': str(e), 'service': service, 'endpoint': endpoint}), 500
 
 @app.route('/status', methods=['GET'])
+@require_api_key
 def status():
     """Check health status of all services"""
     results = {}
@@ -213,6 +251,7 @@ def health():
 # ==================== LLM-OPTIMIZED ENDPOINTS ====================
 
 @app.route('/llm/full', methods=['GET'])
+@require_api_key
 def llm_full():
     """Complete documentation dump optimized for LLM context loading"""
     return jsonify({
@@ -227,6 +266,7 @@ def llm_full():
     })
 
 @app.route('/llm/compact', methods=['GET'])
+@require_api_key
 def llm_compact():
     """Compact reference for token-limited contexts"""
     compact = {
