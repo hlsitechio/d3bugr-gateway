@@ -1,0 +1,101 @@
+{
+  "service": "argus-recon",
+  "name": "Argus Reconnaissance",
+  "category": "recon",
+  "url": "https://argus-recon-production.up.railway.app",
+  "description": "Comprehensive asset discovery and enumeration. Combines subdomain enumeration, port scanning, and technology detection in unified workflows.",
+
+  "use_cases": [
+    "Full attack surface mapping",
+    "Automated subdomain discovery",
+    "Port scanning with service detection",
+    "Combine multiple recon tools in one call"
+  ],
+
+  "endpoints": [
+    {
+      "path": "/recon",
+      "method": "POST",
+      "description": "Full reconnaissance scan",
+      "parameters": {
+        "target": {
+          "type": "string",
+          "required": true,
+          "description": "Target domain or IP"
+        },
+        "depth": {
+          "type": "string",
+          "required": false,
+          "description": "Scan depth",
+          "values": ["quick", "normal", "deep"],
+          "default": "normal"
+        }
+      },
+      "response": {
+        "subdomains": "Discovered subdomains",
+        "ips": "Resolved IP addresses",
+        "ports": "Open ports per host",
+        "technologies": "Detected tech stack"
+      }
+    },
+    {
+      "path": "/subdomains",
+      "method": "POST",
+      "description": "Subdomain enumeration only",
+      "parameters": {
+        "target": {
+          "type": "string",
+          "required": true,
+          "description": "Root domain to enumerate"
+        }
+      }
+    },
+    {
+      "path": "/ports",
+      "method": "POST",
+      "description": "Port scan targets",
+      "parameters": {
+        "target": {
+          "type": "string",
+          "required": true,
+          "description": "IP or hostname"
+        }
+      }
+    },
+    {
+      "path": "/health",
+      "method": "GET",
+      "description": "Health check"
+    }
+  ],
+
+  "depth_levels": {
+    "quick": "Fast scan - common subdomains, top 100 ports",
+    "normal": "Standard - multiple sources, top 1000 ports",
+    "deep": "Thorough - all sources, full port range (slow)"
+  },
+
+  "examples": [
+    {
+      "description": "Full reconnaissance",
+      "gateway_call": "POST /call/argus-recon/recon",
+      "body": {"target": "example.com", "depth": "normal"}
+    },
+    {
+      "description": "Quick subdomain enum",
+      "gateway_call": "POST /call/argus-recon/subdomains",
+      "body": {"target": "example.com"}
+    },
+    {
+      "description": "Port scan specific host",
+      "gateway_call": "POST /call/argus-recon/ports",
+      "body": {"target": "192.168.1.1"}
+    }
+  ],
+
+  "mcp_tools": [
+    "mcp__d3bugr__recon_full",
+    "mcp__d3bugr__recon_subdomains",
+    "mcp__d3bugr__recon_ports"
+  ]
+}

@@ -1,215 +1,154 @@
 from flask import Flask, jsonify, request
 import requests
+import json
 import os
 
 app = Flask(__name__)
 
-# Service registry - all Railway services
-SERVICES = {
-    # Recon
-    "nmap": "https://nmap-production.up.railway.app",
-    "argus-recon": "https://argus-recon-production.up.railway.app",
-    "dns-tools": "https://dns-tools-api-production.up.railway.app",
-    "theharvester": "https://theharvester-production.up.railway.app",
-    # Scanning
-    "nuclei": "https://nuclei-production-d931.up.railway.app",
-    "sqlmap": "https://sqlmap-api-production.up.railway.app",
-    "bhp": "https://bhp-api-production.up.railway.app",
-    # OSINT
-    "shodan": "https://divine-trust-production.up.railway.app",
-}
+# ==================== LOAD EMBEDDED DOCS ====================
+# All docs loaded from JSON at startup - no external network calls
 
-# Full documentation
-DOCS = {
-    "meta": {
-        "name": "Railway D3buGr API Gateway",
-        "description": "Unified API to call all bug bounty tools",
-        "version": "1.0.0",
-        "gateway_endpoint": "/call/{service}/{endpoint}"
-    },
-    "context": {
-        "what": "Cloud-based bug bounty hunting toolkit deployed on Railway. Security scanning, reconnaissance, and exploitation tools as HTTP APIs.",
-        "why": [
-            "Offload heavy scans - nmap, nuclei, sqlmap run on Railway servers",
-            "Avoid detection - Scans originate from Railway IPs",
-            "Parallel execution - Multiple scans simultaneously",
-            "Persistence - Services run 24/7",
-            "MCP Integration - Tools exposed via MCP for Claude Code / AI agents"
-        ],
-        "when": [
-            "Bug bounty hunting - Authorized security testing",
-            "Penetration testing - With written permission",
-            "CTF competitions - Capture the flag challenges",
-            "Security research - Vulnerability research on owned systems"
-        ],
-        "workflow": [
-            "1. RECON: theharvester, dns-tools, argus-recon, nmap",
-            "2. SCANNING: nuclei, sqlmap, bhp",
-            "3. EXPLOITATION: D3buGr (MCP only)",
-            "4. INTELLIGENCE: shodan"
-        ]
-    },
-    "services": {
-        "nmap": {
-            "url": SERVICES["nmap"],
-            "description": "Port scanning and service detection",
-            "endpoints": [
-                {"path": "/scan", "method": "POST", "params": {"target": "required", "args": "optional"}},
-                {"path": "/quick", "method": "POST", "params": {"target": "required"}},
-                {"path": "/version", "method": "GET"},
-                {"path": "/health", "method": "GET"}
-            ],
-            "examples": [
-                {"desc": "Full scan", "call": "/call/nmap/scan", "body": {"target": "example.com", "args": "-sV -p22,80,443"}},
-                {"desc": "Quick scan", "call": "/call/nmap/quick", "body": {"target": "example.com"}}
-            ]
-        },
-        "nuclei": {
-            "url": SERVICES["nuclei"],
-            "description": "Template-based vulnerability scanner",
-            "endpoints": [
-                {"path": "/scan", "method": "POST", "params": {"target": "required", "templates": "optional", "severity": "optional"}},
-                {"path": "/quick", "method": "POST", "params": {"target": "required"}},
-                {"path": "/cves", "method": "POST", "params": {"target": "required", "year": "optional"}},
-                {"path": "/tech", "method": "POST", "params": {"target": "required"}},
-                {"path": "/templates", "method": "GET"},
-                {"path": "/health", "method": "GET"}
-            ],
-            "examples": [
-                {"desc": "Quick vuln scan", "call": "/call/nuclei/quick", "body": {"target": "https://example.com"}},
-                {"desc": "CVE scan", "call": "/call/nuclei/cves", "body": {"target": "https://example.com", "year": "2024"}}
-            ]
-        },
-        "sqlmap": {
-            "url": SERVICES["sqlmap"],
-            "description": "SQL injection testing",
-            "endpoints": [
-                {"path": "/scan", "method": "POST", "params": {"url": "required", "level": "optional", "risk": "optional"}},
-                {"path": "/quick", "method": "POST", "params": {"url": "required"}},
-                {"path": "/status/{task_id}", "method": "GET"},
-                {"path": "/result/{task_id}", "method": "GET"},
-                {"path": "/health", "method": "GET"}
-            ],
-            "examples": [
-                {"desc": "SQLi test", "call": "/call/sqlmap/quick", "body": {"url": "https://example.com/page?id=1"}}
-            ]
-        },
-        "bhp": {
-            "url": SERVICES["bhp"],
-            "description": "XSS, SSRF, IDOR, encoding, payloads",
-            "endpoints": [
-                {"path": "/sqli/scan", "method": "POST", "params": {"url": "required"}},
-                {"path": "/ssrf/scan", "method": "POST", "params": {"url": "required", "callback": "optional"}},
-                {"path": "/takeover", "method": "POST", "params": {"domain": "required"}},
-                {"path": "/dirbust", "method": "POST", "params": {"url": "required"}},
-                {"path": "/idor", "method": "POST", "params": {"url": "required"}},
-                {"path": "/payload/shell", "method": "POST", "params": {"ip": "required", "port": "required", "type": "optional"}},
-                {"path": "/payload/xss", "method": "POST", "params": {"type": "optional"}},
-                {"path": "/encode", "method": "POST", "params": {"data": "required", "type": "optional"}},
-                {"path": "/decode", "method": "POST", "params": {"data": "required", "type": "optional"}},
-                {"path": "/health", "method": "GET"}
-            ]
-        },
-        "dns-tools": {
-            "url": SERVICES["dns-tools"],
-            "description": "DNS enumeration and zone transfers",
-            "endpoints": [
-                {"path": "/lookup", "method": "POST", "params": {"domain": "required", "types": "optional"}},
-                {"path": "/zone-transfer", "method": "POST", "params": {"domain": "required"}},
-                {"path": "/reverse", "method": "POST", "params": {"ip": "required"}},
-                {"path": "/mx", "method": "POST", "params": {"domain": "required"}},
-                {"path": "/dnssec", "method": "POST", "params": {"domain": "required"}},
-                {"path": "/health", "method": "GET"}
-            ]
-        },
-        "theharvester": {
-            "url": SERVICES["theharvester"],
-            "description": "Email and subdomain harvesting",
-            "endpoints": [
-                {"path": "/harvest", "method": "POST", "params": {"domain": "required", "source": "optional", "limit": "optional"}},
-                {"path": "/emails", "method": "POST", "params": {"domain": "required"}},
-                {"path": "/subdomains", "method": "POST", "params": {"domain": "required"}},
-                {"path": "/sources", "method": "GET"},
-                {"path": "/health", "method": "GET"}
-            ]
-        },
-        "argus-recon": {
-            "url": SERVICES["argus-recon"],
-            "description": "Asset discovery and enumeration",
-            "endpoints": [
-                {"path": "/recon", "method": "POST", "params": {"target": "required", "depth": "optional"}},
-                {"path": "/subdomains", "method": "POST", "params": {"target": "required"}},
-                {"path": "/ports", "method": "POST", "params": {"target": "required"}},
-                {"path": "/health", "method": "GET"}
-            ]
-        },
-        "shodan": {
-            "url": SERVICES["shodan"],
-            "description": "Shodan + CVE database",
-            "endpoints": [
-                {"path": "/shodan/host/{ip}", "method": "GET"},
-                {"path": "/shodan/search", "method": "POST", "params": {"query": "required"}},
-                {"path": "/shodan/dns", "method": "POST", "params": {"domain": "required"}},
-                {"path": "/shodan/honeypot/{ip}", "method": "GET"},
-                {"path": "/cve/{cve_id}", "method": "GET"},
-                {"path": "/cve/search", "method": "POST", "params": {"product": "optional"}},
-                {"path": "/cve/recent", "method": "GET"},
-                {"path": "/cve/kev", "method": "GET"},
-                {"path": "/health", "method": "GET"}
-            ]
-        }
-    },
-    "mcp_integration": {
-        "prefix": "mcp__d3bugr__",
-        "examples": [
-            "mcp__d3bugr__nmap_scan(target, args)",
-            "mcp__d3bugr__nuclei_quick(target)",
-            "mcp__d3bugr__sqlmap_test(url)",
-            "mcp__d3bugr__hunt_jwts()",
-            "mcp__d3bugr__full_recon()"
-        ]
-    }
+def load_docs():
+    """Load all documentation from embedded JSON files"""
+    docs_dir = os.path.join(os.path.dirname(__file__), 'docs')
+    docs = {}
+
+    for filename in os.listdir(docs_dir):
+        if filename.endswith('.json'):
+            filepath = os.path.join(docs_dir, filename)
+            with open(filepath, 'r') as f:
+                key = filename.replace('.json', '')
+                docs[key] = json.load(f)
+
+    return docs
+
+DOCS = load_docs()
+
+# Service registry - extracted from docs
+SERVICES = {
+    doc['service']: doc['url']
+    for doc in DOCS.values()
+    if 'service' in doc and 'url' in doc
 }
 
 # ==================== DOCUMENTATION ENDPOINTS ====================
 
 @app.route('/', methods=['GET'])
 def index():
-    """Main docs - returns full documentation"""
-    return jsonify(DOCS)
+    """Full documentation - all services, meta, and context"""
+    return jsonify({
+        "meta": DOCS.get('meta', {}),
+        "services": {k: v for k, v in DOCS.items() if k != 'meta'},
+        "service_urls": SERVICES
+    })
 
 @app.route('/docs', methods=['GET'])
 def docs():
-    """Alias for main docs"""
-    return jsonify(DOCS)
+    """Alias for full docs"""
+    return index()
+
+@app.route('/meta', methods=['GET'])
+def meta():
+    """Meta information and LLM context"""
+    return jsonify(DOCS.get('meta', {}))
 
 @app.route('/context', methods=['GET'])
 def context():
-    """LLM context - what/why/when/how"""
-    return jsonify(DOCS['context'])
-
-@app.route('/services', methods=['GET'])
-def list_services():
-    """List all available services"""
-    return jsonify({name: {"url": svc["url"], "description": svc["description"]}
-                    for name, svc in DOCS['services'].items()})
-
-@app.route('/services/<service>', methods=['GET'])
-def service_detail(service):
-    """Get specific service documentation"""
-    if service in DOCS['services']:
-        return jsonify(DOCS['services'][service])
-    return jsonify({'error': f'Service {service} not found', 'available': list(DOCS['services'].keys())}), 404
-
-@app.route('/mcp', methods=['GET'])
-def mcp():
-    """MCP integration info"""
-    return jsonify(DOCS['mcp_integration'])
+    """LLM context - what/why/when/workflow"""
+    meta = DOCS.get('meta', {})
+    return jsonify({
+        "llm_context": meta.get('llm_context', {}),
+        "workflow": meta.get('workflow', {}),
+        "gateway_usage": meta.get('gateway_usage', {})
+    })
 
 @app.route('/workflow', methods=['GET'])
 def workflow():
-    """Typical workflow"""
-    return jsonify({"workflow": DOCS['context']['workflow']})
+    """Hunting workflow phases"""
+    meta = DOCS.get('meta', {})
+    return jsonify(meta.get('workflow', {}))
+
+@app.route('/services', methods=['GET'])
+def list_services():
+    """List all available services with URLs and descriptions"""
+    services = {}
+    for key, doc in DOCS.items():
+        if 'service' in doc:
+            services[doc['service']] = {
+                "name": doc.get('name', ''),
+                "url": doc.get('url', ''),
+                "category": doc.get('category', ''),
+                "description": doc.get('description', ''),
+                "endpoints_count": len(doc.get('endpoints', []))
+            }
+    return jsonify(services)
+
+@app.route('/services/<service>', methods=['GET'])
+def service_detail(service):
+    """Get complete documentation for a specific service"""
+    for key, doc in DOCS.items():
+        if doc.get('service') == service:
+            return jsonify(doc)
+    return jsonify({
+        'error': f'Service {service} not found',
+        'available': list(SERVICES.keys())
+    }), 404
+
+@app.route('/endpoints', methods=['GET'])
+def all_endpoints():
+    """List all endpoints across all services"""
+    endpoints = []
+    for key, doc in DOCS.items():
+        if 'service' in doc and 'endpoints' in doc:
+            for ep in doc['endpoints']:
+                endpoints.append({
+                    "service": doc['service'],
+                    "path": ep.get('path', ''),
+                    "method": ep.get('method', ''),
+                    "description": ep.get('description', ''),
+                    "gateway_path": f"/call/{doc['service']}/{ep.get('path', '').lstrip('/')}"
+                })
+    return jsonify(endpoints)
+
+@app.route('/mcp', methods=['GET'])
+def mcp():
+    """MCP tool mappings for all services"""
+    mcp_tools = {}
+    for key, doc in DOCS.items():
+        if 'service' in doc and 'mcp_tools' in doc:
+            mcp_tools[doc['service']] = doc['mcp_tools']
+    return jsonify({
+        "prefix": "mcp__d3bugr__",
+        "tools_by_service": mcp_tools,
+        "all_tools": [tool for tools in mcp_tools.values() for tool in tools]
+    })
+
+@app.route('/examples', methods=['GET'])
+def examples():
+    """All usage examples across services"""
+    all_examples = []
+    for key, doc in DOCS.items():
+        if 'service' in doc and 'examples' in doc:
+            for ex in doc['examples']:
+                ex['service'] = doc['service']
+                all_examples.append(ex)
+    return jsonify(all_examples)
+
+@app.route('/categories', methods=['GET'])
+def categories():
+    """Services grouped by category"""
+    cats = {}
+    for key, doc in DOCS.items():
+        if 'service' in doc:
+            cat = doc.get('category', 'other')
+            if cat not in cats:
+                cats[cat] = []
+            cats[cat].append({
+                "service": doc['service'],
+                "name": doc.get('name', ''),
+                "description": doc.get('description', '')
+            })
+    return jsonify(cats)
 
 # ==================== GATEWAY ENDPOINTS ====================
 
@@ -254,12 +193,15 @@ def call_service(service, endpoint):
 
 @app.route('/status', methods=['GET'])
 def status():
-    """Check status of all services"""
+    """Check health status of all services"""
     results = {}
     for name, url in SERVICES.items():
         try:
             resp = requests.get(f"{url}/health", timeout=5)
-            results[name] = {"status": "online" if resp.status_code == 200 else "error", "url": url}
+            results[name] = {
+                "status": "online" if resp.status_code == 200 else "error",
+                "url": url
+            }
         except:
             results[name] = {"status": "offline", "url": url}
     return jsonify(results)
@@ -267,6 +209,40 @@ def status():
 @app.route('/health', methods=['GET'])
 def health():
     return 'ok'
+
+# ==================== LLM-OPTIMIZED ENDPOINTS ====================
+
+@app.route('/llm/full', methods=['GET'])
+def llm_full():
+    """Complete documentation dump optimized for LLM context loading"""
+    return jsonify({
+        "meta": DOCS.get('meta', {}),
+        "services": {k: v for k, v in DOCS.items() if k != 'meta'},
+        "quick_reference": {
+            "gateway_pattern": "POST /call/{service}/{endpoint}",
+            "available_services": list(SERVICES.keys()),
+            "status_check": "GET /status",
+            "service_docs": "GET /services/{service}"
+        }
+    })
+
+@app.route('/llm/compact', methods=['GET'])
+def llm_compact():
+    """Compact reference for token-limited contexts"""
+    compact = {
+        "gateway": "/call/{service}/{endpoint}",
+        "services": {}
+    }
+    for key, doc in DOCS.items():
+        if 'service' in doc:
+            compact["services"][doc['service']] = {
+                "url": doc.get('url', ''),
+                "endpoints": [
+                    f"{ep.get('method', 'GET')} {ep.get('path', '')}"
+                    for ep in doc.get('endpoints', [])
+                ]
+            }
+    return jsonify(compact)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)

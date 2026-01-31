@@ -1,0 +1,77 @@
+{
+  "name": "D3buGr Railway API Gateway",
+  "version": "2.0.0",
+  "description": "Unified API gateway for cloud-based bug bounty hunting toolkit",
+  "base_url": "https://docs-gateway-production.up.railway.app",
+
+  "llm_context": {
+    "what": "Cloud-deployed security scanning infrastructure on Railway. All tools run as HTTP APIs - offload heavy scans, avoid detection, enable parallel execution.",
+    "why": [
+      "Offload CPU-intensive scans to cloud servers",
+      "Scans originate from Railway IPs, not your machine",
+      "Run multiple scans simultaneously across services",
+      "24/7 availability - services persist between sessions",
+      "MCP integration for AI-assisted hunting"
+    ],
+    "when": [
+      "Bug bounty hunting with authorized scope",
+      "Penetration testing with written permission",
+      "CTF competitions and challenges",
+      "Security research on owned/authorized systems"
+    ],
+    "authorization_required": true,
+    "ethical_use_only": true
+  },
+
+  "workflow": {
+    "phases": [
+      {
+        "phase": 1,
+        "name": "RECON",
+        "description": "Asset discovery and enumeration",
+        "tools": ["theharvester", "dns-tools", "argus-recon", "nmap"],
+        "goal": "Map attack surface - subdomains, IPs, ports, services"
+      },
+      {
+        "phase": 2,
+        "name": "SCANNING",
+        "description": "Vulnerability detection",
+        "tools": ["nuclei", "sqlmap", "bhp"],
+        "goal": "Identify vulnerabilities - CVEs, misconfigs, injection points"
+      },
+      {
+        "phase": 3,
+        "name": "EXPLOITATION",
+        "description": "Proof of concept development",
+        "tools": ["bhp", "sqlmap"],
+        "goal": "Validate and demonstrate impact"
+      },
+      {
+        "phase": 4,
+        "name": "INTELLIGENCE",
+        "description": "OSINT and enrichment",
+        "tools": ["shodan"],
+        "goal": "Gather context - exposed services, historical data, CVE details"
+      }
+    ]
+  },
+
+  "gateway_usage": {
+    "pattern": "/call/{service}/{endpoint}",
+    "method": "POST for actions, GET for queries",
+    "content_type": "application/json",
+    "timeout": "600 seconds max",
+    "examples": [
+      {
+        "description": "Quick nmap scan",
+        "request": "POST /call/nmap/quick",
+        "body": {"target": "example.com"}
+      },
+      {
+        "description": "Nuclei vuln scan",
+        "request": "POST /call/nuclei/quick",
+        "body": {"target": "https://example.com"}
+      }
+    ]
+  }
+}

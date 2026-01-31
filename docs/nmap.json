@@ -1,0 +1,100 @@
+{
+  "service": "nmap",
+  "name": "Nmap Port Scanner",
+  "category": "recon",
+  "url": "https://nmap-production.up.railway.app",
+  "description": "Network port scanning and service detection. Identifies open ports, running services, versions, and OS fingerprinting.",
+
+  "use_cases": [
+    "Discover open ports on target hosts",
+    "Identify service versions for CVE matching",
+    "Map network infrastructure",
+    "Detect firewall rules and filtering"
+  ],
+
+  "endpoints": [
+    {
+      "path": "/scan",
+      "method": "POST",
+      "description": "Full nmap scan with custom arguments",
+      "parameters": {
+        "target": {
+          "type": "string",
+          "required": true,
+          "description": "IP, hostname, or CIDR range",
+          "examples": ["192.168.1.1", "example.com", "10.0.0.0/24"]
+        },
+        "args": {
+          "type": "string",
+          "required": false,
+          "description": "Nmap arguments",
+          "examples": ["-sV -p22,80,443", "-sC -sV -A", "-Pn -sS"]
+        }
+      },
+      "response": {
+        "status": "success|error",
+        "output": "Raw nmap output",
+        "hosts": "Parsed host data (when available)"
+      },
+      "timeout": "540 seconds"
+    },
+    {
+      "path": "/quick",
+      "method": "POST",
+      "description": "Quick scan - top 100 ports with service detection",
+      "parameters": {
+        "target": {
+          "type": "string",
+          "required": true,
+          "description": "Target to scan"
+        }
+      },
+      "timeout": "180 seconds"
+    },
+    {
+      "path": "/version",
+      "method": "GET",
+      "description": "Get nmap version info"
+    },
+    {
+      "path": "/health",
+      "method": "GET",
+      "description": "Health check"
+    }
+  ],
+
+  "common_arguments": {
+    "-sV": "Service version detection",
+    "-sC": "Default script scan",
+    "-A": "Aggressive scan (OS, version, script, traceroute)",
+    "-Pn": "Skip ping, treat host as up",
+    "-sS": "SYN stealth scan",
+    "-sU": "UDP scan",
+    "-p-": "Scan all 65535 ports",
+    "-T4": "Faster timing",
+    "--top-ports 1000": "Top 1000 common ports"
+  },
+
+  "examples": [
+    {
+      "description": "Service version scan on common ports",
+      "gateway_call": "POST /call/nmap/scan",
+      "body": {"target": "example.com", "args": "-sV -p22,80,443,8080,8443"}
+    },
+    {
+      "description": "Full port scan",
+      "gateway_call": "POST /call/nmap/scan",
+      "body": {"target": "192.168.1.1", "args": "-p- -T4"}
+    },
+    {
+      "description": "Quick reconnaissance",
+      "gateway_call": "POST /call/nmap/quick",
+      "body": {"target": "example.com"}
+    }
+  ],
+
+  "mcp_tools": [
+    "mcp__d3bugr__nmap_scan",
+    "mcp__d3bugr__nmap_quick"
+  ]
+}

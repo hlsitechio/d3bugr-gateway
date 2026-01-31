@@ -1,0 +1,136 @@
+{
+  "service": "dns-tools",
+  "name": "DNS Enumeration Tools",
+  "category": "recon",
+  "url": "https://dns-tools-api-production.up.railway.app",
+  "description": "DNS reconnaissance and enumeration. Record lookups, zone transfers, reverse DNS, MX analysis, and DNSSEC validation.",
+
+  "use_cases": [
+    "Enumerate DNS records for target domain",
+    "Attempt zone transfer (AXFR)",
+    "Reverse DNS lookups on IP ranges",
+    "Analyze mail server configuration",
+    "Check DNSSEC implementation"
+  ],
+
+  "endpoints": [
+    {
+      "path": "/lookup",
+      "method": "POST",
+      "description": "DNS record lookup",
+      "parameters": {
+        "domain": {
+          "type": "string",
+          "required": true,
+          "description": "Domain to query"
+        },
+        "types": {
+          "type": "array",
+          "required": false,
+          "description": "Record types to query",
+          "values": ["A", "AAAA", "MX", "NS", "TXT", "CNAME", "SOA", "PTR"],
+          "default": ["A", "AAAA", "MX", "NS", "TXT"]
+        }
+      }
+    },
+    {
+      "path": "/zone-transfer",
+      "method": "POST",
+      "description": "Attempt DNS zone transfer (AXFR)",
+      "parameters": {
+        "domain": {
+          "type": "string",
+          "required": true,
+          "description": "Domain to attempt transfer"
+        }
+      },
+      "notes": "Most domains block AXFR - success indicates misconfiguration"
+    },
+    {
+      "path": "/reverse",
+      "method": "POST",
+      "description": "Reverse DNS lookup",
+      "parameters": {
+        "ip": {
+          "type": "string",
+          "required": true,
+          "description": "IP address or CIDR range"
+        }
+      }
+    },
+    {
+      "path": "/mx",
+      "method": "POST",
+      "description": "MX record analysis",
+      "parameters": {
+        "domain": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "response": {
+        "mx_records": "Mail servers with priority",
+        "spf": "SPF record if present",
+        "dmarc": "DMARC policy if present"
+      }
+    },
+    {
+      "path": "/dnssec",
+      "method": "POST",
+      "description": "DNSSEC validation check",
+      "parameters": {
+        "domain": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "path": "/health",
+      "method": "GET",
+      "description": "Health check"
+    }
+  ],
+
+  "record_types": {
+    "A": "IPv4 address",
+    "AAAA": "IPv6 address",
+    "MX": "Mail exchange servers",
+    "NS": "Nameservers",
+    "TXT": "Text records (SPF, DKIM, verification)",
+    "CNAME": "Canonical name aliases",
+    "SOA": "Start of authority",
+    "PTR": "Reverse DNS pointer"
+  },
+
+  "examples": [
+    {
+      "description": "Full DNS lookup",
+      "gateway_call": "POST /call/dns-tools/lookup",
+      "body": {"domain": "example.com", "types": ["A", "AAAA", "MX", "NS", "TXT"]}
+    },
+    {
+      "description": "Zone transfer attempt",
+      "gateway_call": "POST /call/dns-tools/zone-transfer",
+      "body": {"domain": "example.com"}
+    },
+    {
+      "description": "Reverse DNS",
+      "gateway_call": "POST /call/dns-tools/reverse",
+      "body": {"ip": "93.184.216.34"}
+    },
+    {
+      "description": "Mail server analysis",
+      "gateway_call": "POST /call/dns-tools/mx",
+      "body": {"domain": "example.com"}
+    }
+  ],
+
+  "mcp_tools": [
+    "mcp__d3bugr__dns_lookup",
+    "mcp__d3bugr__dns_zone_transfer",
+    "mcp__d3bugr__dns_reverse",
+    "mcp__d3bugr__dns_mx_check",
+    "mcp__d3bugr__dns_dnssec"
+  ]
+}

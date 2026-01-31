@@ -1,0 +1,115 @@
+{
+  "service": "theharvester",
+  "name": "theHarvester OSINT",
+  "category": "recon",
+  "url": "https://theharvester-production.up.railway.app",
+  "description": "Email and subdomain harvesting from public sources. Gathers emails, subdomains, hosts, and employee names from search engines and public databases.",
+
+  "use_cases": [
+    "Discover email addresses for phishing assessment",
+    "Enumerate subdomains from search engines",
+    "Find employee names for social engineering scope",
+    "Gather IPs and hosts from public sources"
+  ],
+
+  "endpoints": [
+    {
+      "path": "/harvest",
+      "method": "POST",
+      "description": "Full harvesting scan",
+      "parameters": {
+        "domain": {
+          "type": "string",
+          "required": true,
+          "description": "Target domain"
+        },
+        "source": {
+          "type": "string",
+          "required": false,
+          "description": "Data source to use",
+          "values": ["all", "google", "bing", "yahoo", "duckduckgo", "linkedin", "twitter", "github", "shodan", "virustotal", "crtsh"],
+          "default": "all"
+        },
+        "limit": {
+          "type": "integer",
+          "required": false,
+          "description": "Max results per source",
+          "default": 500
+        }
+      }
+    },
+    {
+      "path": "/emails",
+      "method": "POST",
+      "description": "Email-focused harvesting",
+      "parameters": {
+        "domain": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "path": "/subdomains",
+      "method": "POST",
+      "description": "Subdomain-focused harvesting",
+      "parameters": {
+        "domain": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "path": "/sources",
+      "method": "GET",
+      "description": "List available data sources"
+    },
+    {
+      "path": "/health",
+      "method": "GET",
+      "description": "Health check"
+    }
+  ],
+
+  "data_sources": {
+    "google": "Google search results",
+    "bing": "Bing search results",
+    "duckduckgo": "DuckDuckGo results",
+    "linkedin": "LinkedIn profiles",
+    "github": "GitHub code search",
+    "shodan": "Shodan host database",
+    "virustotal": "VirusTotal domain info",
+    "crtsh": "Certificate transparency logs"
+  },
+
+  "examples": [
+    {
+      "description": "Full harvest from all sources",
+      "gateway_call": "POST /call/theharvester/harvest",
+      "body": {"domain": "example.com", "source": "all", "limit": 500}
+    },
+    {
+      "description": "Email harvesting only",
+      "gateway_call": "POST /call/theharvester/emails",
+      "body": {"domain": "example.com"}
+    },
+    {
+      "description": "Subdomain discovery",
+      "gateway_call": "POST /call/theharvester/subdomains",
+      "body": {"domain": "example.com"}
+    },
+    {
+      "description": "GitHub-only search",
+      "gateway_call": "POST /call/theharvester/harvest",
+      "body": {"domain": "example.com", "source": "github"}
+    }
+  ],
+
+  "mcp_tools": [
+    "mcp__d3bugr__harvest",
+    "mcp__d3bugr__harvest_emails",
+    "mcp__d3bugr__harvest_subdomains",
+    "mcp__d3bugr__harvest_quick"
+  ]
+}

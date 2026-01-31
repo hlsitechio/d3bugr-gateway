@@ -1,0 +1,183 @@
+{
+  "service": "shodan",
+  "name": "Shodan + CVE Intelligence",
+  "category": "osint",
+  "url": "https://divine-trust-production.up.railway.app",
+  "description": "Shodan internet intelligence and CVE database. Query exposed services, get host details, search for vulnerable devices, and lookup CVE information.",
+
+  "use_cases": [
+    "Get detailed info on IP addresses",
+    "Search for exposed services globally",
+    "Lookup CVE details and severity",
+    "Check if IP is a honeypot",
+    "DNS resolution via Shodan"
+  ],
+
+  "endpoints": [
+    {
+      "path": "/shodan/host/{ip}",
+      "method": "GET",
+      "description": "Get Shodan data for IP",
+      "parameters": {
+        "ip": {
+          "type": "string",
+          "required": true,
+          "description": "IP address to lookup"
+        }
+      },
+      "response": {
+        "ip": "Target IP",
+        "hostnames": "Associated hostnames",
+        "ports": "Open ports",
+        "services": "Running services with banners",
+        "vulns": "Known CVEs",
+        "location": "Geolocation data",
+        "org": "Organization/ISP"
+      }
+    },
+    {
+      "path": "/shodan/search",
+      "method": "POST",
+      "description": "Search Shodan database",
+      "parameters": {
+        "query": {
+          "type": "string",
+          "required": true,
+          "description": "Shodan search query",
+          "examples": [
+            "apache country:US",
+            "port:22 org:\"Amazon\"",
+            "http.title:\"Dashboard\"",
+            "ssl.cert.subject.cn:example.com"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/shodan/dns",
+      "method": "POST",
+      "description": "DNS lookup via Shodan",
+      "parameters": {
+        "domain": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "path": "/shodan/honeypot/{ip}",
+      "method": "GET",
+      "description": "Check if IP is a honeypot",
+      "parameters": {
+        "ip": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "response": {
+        "score": "0.0-1.0 (higher = more likely honeypot)"
+      }
+    },
+    {
+      "path": "/cve/{cve_id}",
+      "method": "GET",
+      "description": "Get CVE details",
+      "parameters": {
+        "cve_id": {
+          "type": "string",
+          "required": true,
+          "description": "CVE identifier",
+          "examples": ["CVE-2024-1234", "CVE-2023-44487"]
+        }
+      },
+      "response": {
+        "id": "CVE ID",
+        "description": "Vulnerability description",
+        "cvss": "CVSS score",
+        "severity": "Severity rating",
+        "references": "Reference URLs",
+        "cpe": "Affected products"
+      }
+    },
+    {
+      "path": "/cve/search",
+      "method": "POST",
+      "description": "Search CVEs by product",
+      "parameters": {
+        "product": {
+          "type": "string",
+          "required": false,
+          "description": "Product name",
+          "examples": ["apache", "nginx", "wordpress"]
+        }
+      }
+    },
+    {
+      "path": "/cve/recent",
+      "method": "GET",
+      "description": "Get recently published CVEs"
+    },
+    {
+      "path": "/cve/kev",
+      "method": "GET",
+      "description": "Known Exploited Vulnerabilities (CISA KEV)"
+    },
+    {
+      "path": "/health",
+      "method": "GET",
+      "description": "Health check"
+    }
+  ],
+
+  "shodan_filters": {
+    "port": "Filter by port number",
+    "country": "Filter by country code",
+    "org": "Filter by organization",
+    "hostname": "Filter by hostname",
+    "os": "Filter by operating system",
+    "product": "Filter by product name",
+    "version": "Filter by version",
+    "http.title": "Filter by page title",
+    "ssl.cert.subject.cn": "Filter by SSL cert CN"
+  },
+
+  "examples": [
+    {
+      "description": "IP intelligence lookup",
+      "gateway_call": "GET /call/shodan/shodan/host/8.8.8.8"
+    },
+    {
+      "description": "Search for exposed MongoDB",
+      "gateway_call": "POST /call/shodan/shodan/search",
+      "body": {"query": "product:mongodb port:27017"}
+    },
+    {
+      "description": "Honeypot check",
+      "gateway_call": "GET /call/shodan/shodan/honeypot/1.2.3.4"
+    },
+    {
+      "description": "CVE lookup",
+      "gateway_call": "GET /call/shodan/cve/CVE-2024-3094"
+    },
+    {
+      "description": "Search Apache CVEs",
+      "gateway_call": "POST /call/shodan/cve/search",
+      "body": {"product": "apache"}
+    },
+    {
+      "description": "Known exploited vulns",
+      "gateway_call": "GET /call/shodan/cve/kev"
+    }
+  ],
+
+  "mcp_tools": [
+    "mcp__d3bugr__shodan_host",
+    "mcp__d3bugr__shodan_search",
+    "mcp__d3bugr__shodan_dns",
+    "mcp__d3bugr__shodan_honeypot",
+    "mcp__d3bugr__cvedb_lookup",
+    "mcp__d3bugr__cvedb_search",
+    "mcp__d3bugr__cvedb_recent",
+    "mcp__d3bugr__cvedb_kev"
+  ]
+}

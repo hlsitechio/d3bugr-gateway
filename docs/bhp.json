@@ -1,0 +1,195 @@
+{
+  "service": "bhp",
+  "name": "Bug Hunting Payloads (BHP)",
+  "category": "scanning",
+  "url": "https://bhp-api-production.up.railway.app",
+  "description": "Multi-purpose security testing toolkit. XSS, SSRF, IDOR testing, encoding/decoding, payload generation, and subdomain takeover checks.",
+
+  "use_cases": [
+    "Test for XSS vulnerabilities",
+    "Detect SSRF injection points",
+    "Check IDOR/access control issues",
+    "Generate reverse shell payloads",
+    "Encode/decode data for bypasses",
+    "Check subdomain takeover"
+  ],
+
+  "endpoints": [
+    {
+      "path": "/sqli/scan",
+      "method": "POST",
+      "description": "Basic SQLi detection",
+      "parameters": {
+        "url": {
+          "type": "string",
+          "required": true,
+          "description": "URL with parameter to test"
+        }
+      }
+    },
+    {
+      "path": "/ssrf/scan",
+      "method": "POST",
+      "description": "SSRF vulnerability scan",
+      "parameters": {
+        "url": {
+          "type": "string",
+          "required": true,
+          "description": "URL with potential SSRF param"
+        },
+        "callback": {
+          "type": "string",
+          "required": false,
+          "description": "Callback URL for OOB detection"
+        }
+      }
+    },
+    {
+      "path": "/takeover",
+      "method": "POST",
+      "description": "Subdomain takeover check",
+      "parameters": {
+        "domain": {
+          "type": "string",
+          "required": true,
+          "description": "Subdomain to check"
+        }
+      }
+    },
+    {
+      "path": "/dirbust",
+      "method": "POST",
+      "description": "Directory brute force",
+      "parameters": {
+        "url": {
+          "type": "string",
+          "required": true,
+          "description": "Base URL to scan"
+        }
+      }
+    },
+    {
+      "path": "/idor",
+      "method": "POST",
+      "description": "IDOR vulnerability test",
+      "parameters": {
+        "url": {
+          "type": "string",
+          "required": true,
+          "description": "URL with ID parameter"
+        }
+      }
+    },
+    {
+      "path": "/payload/shell",
+      "method": "POST",
+      "description": "Generate reverse shell payload",
+      "parameters": {
+        "ip": {
+          "type": "string",
+          "required": true,
+          "description": "Listener IP"
+        },
+        "port": {
+          "type": "integer",
+          "required": true,
+          "description": "Listener port"
+        },
+        "type": {
+          "type": "string",
+          "required": false,
+          "description": "Shell type",
+          "values": ["bash", "python", "php", "perl", "nc", "powershell"],
+          "default": "bash"
+        }
+      }
+    },
+    {
+      "path": "/payload/xss",
+      "method": "POST",
+      "description": "Generate XSS payloads",
+      "parameters": {
+        "type": {
+          "type": "string",
+          "required": false,
+          "values": ["basic", "svg", "img", "event", "polyglot"],
+          "default": "basic"
+        }
+      }
+    },
+    {
+      "path": "/encode",
+      "method": "POST",
+      "description": "Encode data",
+      "parameters": {
+        "data": {
+          "type": "string",
+          "required": true
+        },
+        "type": {
+          "type": "string",
+          "required": false,
+          "values": ["base64", "url", "hex", "html"],
+          "default": "base64"
+        }
+      }
+    },
+    {
+      "path": "/decode",
+      "method": "POST",
+      "description": "Decode data",
+      "parameters": {
+        "data": {
+          "type": "string",
+          "required": true
+        },
+        "type": {
+          "type": "string",
+          "required": false,
+          "values": ["base64", "url", "hex", "html"],
+          "default": "base64"
+        }
+      }
+    },
+    {
+      "path": "/health",
+      "method": "GET",
+      "description": "Health check"
+    }
+  ],
+
+  "examples": [
+    {
+      "description": "SSRF scan",
+      "gateway_call": "POST /call/bhp/ssrf/scan",
+      "body": {"url": "https://example.com/fetch?url=http://test.com"}
+    },
+    {
+      "description": "Generate bash reverse shell",
+      "gateway_call": "POST /call/bhp/payload/shell",
+      "body": {"ip": "10.10.10.10", "port": 4444, "type": "bash"}
+    },
+    {
+      "description": "Subdomain takeover check",
+      "gateway_call": "POST /call/bhp/takeover",
+      "body": {"domain": "blog.example.com"}
+    },
+    {
+      "description": "Base64 encode",
+      "gateway_call": "POST /call/bhp/encode",
+      "body": {"data": "<script>alert(1)</script>", "type": "base64"}
+    }
+  ],
+
+  "mcp_tools": [
+    "mcp__d3bugr__bhp_sqli_scan",
+    "mcp__d3bugr__bhp_ssrf_scan",
+    "mcp__d3bugr__bhp_takeover",
+    "mcp__d3bugr__bhp_dirbust",
+    "mcp__d3bugr__bhp_idor",
+    "mcp__d3bugr__bhp_payload_shell",
+    "mcp__d3bugr__bhp_payload_xss",
+    "mcp__d3bugr__bhp_encode",
+    "mcp__d3bugr__bhp_decode"
+  ]
+}

@@ -1,0 +1,148 @@
+{
+  "service": "nuclei",
+  "name": "Nuclei Vulnerability Scanner",
+  "category": "scanning",
+  "url": "https://nuclei-production-d931.up.railway.app",
+  "description": "Template-based vulnerability scanner. Fast, customizable detection of CVEs, misconfigurations, exposed panels, and security issues.",
+
+  "use_cases": [
+    "Detect known CVEs on web applications",
+    "Find misconfigurations and exposed panels",
+    "Technology fingerprinting",
+    "Automated security scanning at scale"
+  ],
+
+  "endpoints": [
+    {
+      "path": "/scan",
+      "method": "POST",
+      "description": "Full nuclei scan with custom options",
+      "parameters": {
+        "target": {
+          "type": "string",
+          "required": true,
+          "description": "URL to scan",
+          "examples": ["https://example.com", "http://192.168.1.1:8080"]
+        },
+        "templates": {
+          "type": "string",
+          "required": false,
+          "description": "Template path or tag filter",
+          "examples": ["cves/", "misconfig/", "exposed-panels/"]
+        },
+        "severity": {
+          "type": "string",
+          "required": false,
+          "description": "Severity filter",
+          "values": ["info", "low", "medium", "high", "critical"],
+          "examples": ["critical,high", "medium,high,critical"]
+        },
+        "tags": {
+          "type": "string",
+          "required": false,
+          "description": "Template tags to include",
+          "examples": ["cve", "rce", "sqli", "xss", "lfi"]
+        }
+      },
+      "timeout": "600 seconds"
+    },
+    {
+      "path": "/quick",
+      "method": "POST",
+      "description": "Quick scan - critical and high severity only",
+      "parameters": {
+        "target": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "path": "/cves",
+      "method": "POST",
+      "description": "CVE-focused scan",
+      "parameters": {
+        "target": {
+          "type": "string",
+          "required": true
+        },
+        "year": {
+          "type": "string",
+          "required": false,
+          "description": "CVE year filter",
+          "examples": ["2024", "2023"]
+        }
+      }
+    },
+    {
+      "path": "/tech",
+      "method": "POST",
+      "description": "Technology detection scan",
+      "parameters": {
+        "target": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "path": "/templates",
+      "method": "GET",
+      "description": "List available template categories"
+    },
+    {
+      "path": "/health",
+      "method": "GET",
+      "description": "Health check"
+    }
+  ],
+
+  "template_categories": {
+    "cves": "Known CVE exploits",
+    "vulnerabilities": "General vulnerability checks",
+    "misconfigurations": "Security misconfigs",
+    "exposed-panels": "Admin panels, login pages",
+    "exposures": "Sensitive file/info exposure",
+    "technologies": "Tech stack fingerprinting",
+    "default-logins": "Default credential checks",
+    "takeovers": "Subdomain takeover checks"
+  },
+
+  "severity_levels": {
+    "info": "Informational findings",
+    "low": "Minor issues",
+    "medium": "Moderate security concerns",
+    "high": "Serious vulnerabilities",
+    "critical": "Critical - immediate action required"
+  },
+
+  "examples": [
+    {
+      "description": "Quick high-severity scan",
+      "gateway_call": "POST /call/nuclei/quick",
+      "body": {"target": "https://example.com"}
+    },
+    {
+      "description": "CVE scan for 2024",
+      "gateway_call": "POST /call/nuclei/cves",
+      "body": {"target": "https://example.com", "year": "2024"}
+    },
+    {
+      "description": "Full scan with RCE focus",
+      "gateway_call": "POST /call/nuclei/scan",
+      "body": {"target": "https://example.com", "tags": "rce", "severity": "critical,high"}
+    },
+    {
+      "description": "Technology fingerprint",
+      "gateway_call": "POST /call/nuclei/tech",
+      "body": {"target": "https://example.com"}
+    }
+  ],
+
+  "mcp_tools": [
+    "mcp__d3bugr__nuclei_scan",
+    "mcp__d3bugr__nuclei_quick",
+    "mcp__d3bugr__nuclei_cves",
+    "mcp__d3bugr__nuclei_tech"
+  ]
+}

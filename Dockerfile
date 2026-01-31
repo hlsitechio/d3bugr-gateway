@@ -4,6 +4,7 @@ RUN pip install flask requests gunicorn
 
 WORKDIR /app
 COPY server.py .
+COPY docs/ ./docs/
 
 EXPOSE 8080
 

@@ -1,0 +1,119 @@
+{
+  "service": "sqlmap",
+  "name": "SQLMap Injection Tester",
+  "category": "scanning",
+  "url": "https://sqlmap-api-production.up.railway.app",
+  "description": "Automated SQL injection detection and exploitation. Tests parameters for SQLi vulnerabilities, extracts databases, and demonstrates impact.",
+
+  "use_cases": [
+    "Detect SQL injection vulnerabilities",
+    "Extract database contents (authorized testing)",
+    "Identify DBMS type and version",
+    "Bypass WAF and filters"
+  ],
+
+  "endpoints": [
+    {
+      "path": "/scan",
+      "method": "POST",
+      "description": "Full SQLi scan with options",
+      "parameters": {
+        "url": {
+          "type": "string",
+          "required": true,
+          "description": "URL with injectable parameter",
+          "examples": ["https://example.com/page?id=1", "https://example.com/search?q=test"]
+        },
+        "level": {
+          "type": "integer",
+          "required": false,
+          "description": "Test level (1-5, higher = more tests)",
+          "default": 1
+        },
+        "risk": {
+          "type": "integer",
+          "required": false,
+          "description": "Risk level (1-3, higher = more aggressive)",
+          "default": 1
+        },
+        "dbs": {
+          "type": "boolean",
+          "required": false,
+          "description": "Enumerate databases"
+        }
+      }
+    },
+    {
+      "path": "/quick",
+      "method": "POST",
+      "description": "Quick SQLi test - basic detection",
+      "parameters": {
+        "url": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "path": "/status/{task_id}",
+      "method": "GET",
+      "description": "Check scan status",
+      "parameters": {
+        "task_id": {
+          "type": "string",
+          "required": true,
+          "description": "Task ID from scan response"
+        }
+      }
+    },
+    {
+      "path": "/result/{task_id}",
+      "method": "GET",
+      "description": "Get scan results",
+      "parameters": {
+        "task_id": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "path": "/health",
+      "method": "GET",
+      "description": "Health check"
+    }
+  ],
+
+  "injection_types": {
+    "boolean-based": "True/false response differences",
+    "error-based": "Database error messages",
+    "union-based": "UNION SELECT data extraction",
+    "time-based": "Response time delays",
+    "stacked-queries": "Multiple query execution"
+  },
+
+  "examples": [
+    {
+      "description": "Quick SQLi test",
+      "gateway_call": "POST /call/sqlmap/quick",
+      "body": {"url": "https://example.com/page?id=1"}
+    },
+    {
+      "description": "Deep scan with DB enumeration",
+      "gateway_call": "POST /call/sqlmap/scan",
+      "body": {"url": "https://example.com/page?id=1", "level": 3, "risk": 2, "dbs": true}
+    }
+  ],
+
+  "mcp_tools": [
+    "mcp__d3bugr__sqlmap_test",
+    "mcp__d3bugr__sqlmap_scan",
+    "mcp__d3bugr__sqlmap_auto"
+  ],
+
+  "notes": [
+    "Async operation - use task_id to poll status",
+    "High level/risk may trigger WAF blocks",
+    "Only use on authorized targets"
+  ]
+}
